@@ -1,0 +1,14 @@
+renderer: html
+summary: 
+Date: Fri, 15 Jun 2012 17:24:32 -0500
+MIME-Version: 1.0
+
+<pre>
+1.0.0 2012-06-15/17:
+ -Add error flags.
+ -Bump major revision given internal data structure addition.
+ -Add the methods below.
+  perror
+  errorFlag
+</pre>
+
