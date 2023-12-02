@@ -9,12 +9,11 @@ Error::Helper - Provides some easy error related methods.
 
 =head1 VERSION
 
-Version 1.0.0
+Version 2.0.0
 
 =cut
 
-our $VERSION = '1.0.0';
-
+our $VERSION = '2.0.0';
 
 =head1 SYNOPSIS
 
@@ -129,8 +128,8 @@ If there is no error, undef is returned.
 
 =cut
 
-sub error{
-    return $_[0]->{error};
+sub error {
+	return $_[0]->{error};
 }
 
 =head2 errorblank
@@ -147,30 +146,35 @@ errors.
 
 =cut
 
-sub errorblank{
-        my $self=$_[0];
+sub errorblank {
+	my $self = $_[0];
 
-		if ($self->{perror}) {
-			my ($package, $filename, $line)=caller;
-			
-			#get the calling sub
-			my @called=caller( 1 );
-			my $subroutine=$called[3];
-			$subroutine=~s/.*\:\://g;
-			
-			$package =~ s/\:\:/\-/g;
+	if ( $self->{perror} ) {
+		my ( $package, $filename, $line ) = caller;
 
-			print STDERR $package.' '.$subroutine.': Unable to blank, as a permanent error is set. '.
-				'error="'.$self->error.'" errorString="'.$self->errorString.'"';
+		#get the calling sub
+		my @called     = caller(1);
+		my $subroutine = $called[3];
+		$subroutine =~ s/.*\:\://g;
 
-			return undef;
-		}
+		$package =~ s/\:\:/\-/g;
 
-        $self->{error}=undef;
-        $self->{errorString}="";
+		print STDERR $package . ' '
+			. $subroutine
+			. ': Unable to blank, as a permanent error is set. '
+			. 'error="'
+			. $self->error
+			. '" errorString="'
+			. $self->errorString . '"';
 
-        return 1;
-};
+		return undef;
+	} ## end if ( $self->{perror} )
+
+	$self->{error}       = undef;
+	$self->{errorString} = "";
+
+	return 1;
+} ## end sub errorblank
 
 =head2 errorFlag
 
@@ -186,21 +190,20 @@ This may be used in a similar manner as the error method.
 
 =cut
 
-sub errorFlag{
-	if ( ! $_[0]->{error} ){
+sub errorFlag {
+	if ( !$_[0]->{error} ) {
 		return undef;
 	}
 
-	if (
-		( ! defined( $_[0]->{errorExtra} ) ) ||
-		( ! defined( $_[0]->{errorExtra}{flags} ) ) ||
-		( ! defined( $_[0]->{errorExtra}{flags}{ $_[1]->{error} } ) )
-		){
+	if (   ( !defined( $_[0]->{errorExtra} ) )
+		|| ( !defined( $_[0]->{errorExtra}{flags} ) )
+		|| ( !defined( $_[0]->{errorExtra}{flags}{ $_[1]->{error} } ) ) )
+	{
 		return 'other';
 	}
 
 	return $_[0]->{errorExtra}{flags}{ $_[1]->{error} };
-}
+} ## end sub errorFlag
 
 =head2 errorString
 
@@ -213,8 +216,8 @@ it will return ''.
 
 =cut
 
-sub errorString{
-    return $_[0]->{errorString};
+sub errorString {
+	return $_[0]->{errorString};
 }
 
 =head2 perror
@@ -228,8 +231,8 @@ error or not.
 
 =cut
 
-sub perror{
-    return $_[0]->{perror};
+sub perror {
+	return $_[0]->{perror};
 }
 
 =head2 warn
@@ -240,21 +243,26 @@ Throws a warn like error message based
 
 =cut
 
-sub warn{
-	my $self=$_[0];
-	
-	my ($package, $filename, $line)=caller;
+sub warn {
+	my $self = $_[0];
+
+	my ( $package, $filename, $line ) = caller;
 
 	#get the calling sub
-	my @called=caller( 1 );
-	my $subroutine=$called[3];
-	$subroutine=~s/.*\:\://g;
+	my @called     = caller(1);
+	my $subroutine = $called[3];
+	$subroutine =~ s/.*\:\://g;
 
 	$package =~ s/\:\:/\-/g;
 
-	print STDERR $package.' '.$subroutine.':'.$self->error.
-		': '.$self->errorString.' at '.$filename.' line '.$line."\n";
-}
+	print STDERR $package . ' '
+		. $subroutine . ':'
+		. $self->error . ': '
+		. $self->errorString . ' at '
+		. $filename
+		. ' line '
+		. $line . "\n";
+} ## end sub warn
 
 =head2 warnString
 
@@ -264,25 +272,25 @@ Throws a warn like error in the same for mate as warn, but with a freeform messa
 
 =cut
 
-sub warnString{
-	my $self=$_[0];
-	my $string=$_[1];
-	
-	if(!defined($string)){
-		$string='undef';
+sub warnString {
+	my $self   = $_[0];
+	my $string = $_[1];
+
+	if ( !defined($string) ) {
+		$string = 'undef';
 	}
-	
-	my ($package, $filename, $line)=caller;
+
+	my ( $package, $filename, $line ) = caller;
 
 	#get the calling sub
-	my @called=caller( 1 );
-	my $subroutine=$called[3];
-	$subroutine=~s/.*\:\://g;
+	my @called     = caller(1);
+	my $subroutine = $called[3];
+	$subroutine =~ s/.*\:\://g;
 
 	$package =~ s/\:\:/\-/g;
 
-	print STDERR $package.' '.$subroutine.': '.$string.' in '.$filename.' at line '.$line."\n";
-}
+	print STDERR $package . ' ' . $subroutine . ': ' . $string . ' in ' . $filename . ' at line ' . $line . "\n";
+} ## end sub warnString
 
 =head1 ERROR FLAGS
 
@@ -347,4 +355,4 @@ See http://dev.perl.org/licenses/ for more information.
 
 =cut
 
-1; # End of Error::Helper
+1;    # End of Error::Helper
