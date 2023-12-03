@@ -17,102 +17,55 @@ our $VERSION = '2.0.0';
 
 =head1 SYNOPSIS
 
-Below is a example module using this.
+Below is a example script showing it's usage.
 
-    package Foo;
-    
-    use warnings;
-    use strict;
-    use base 'Error::Helper';
-    
-    sub new{
-        my $arg=$_[1];
 
-        my $self = {
-            perror=>undef,
-            error=>undef,
-            errorString=>"",
-            errorExtra=>{
-                         flags=>{
-                                 1=>'UndefArg',
-                                 2=>'test',
-                                 }
-                         }.
-        };
-        bless $self;
 
-        #error if $arg is set to "test"
-        if( $arg eq "test" ){
-            $self->{perror}=1;
-            $self->{error}=2;
-            $self->{errorString}='A value of "test" has been set';
-            $self->warn;
-            return $self;
-        }  
+There are five required variables in the blessed hash.
 
-        return undef;
-    }
+    - $self->{error} :: This contains the current error code.
+        - Type :: int or undef
 
-    sub foo{
-        my $self=$_[0];
-        my $a=$_[1];
+    - $self->{errorFilename} :: File from which $self->warn was called.
+        - Type :: string or undef
 
-        if( ! $self->errorblank ){
-            return undef;
-        }
+    - $self->{errorLine} :: Line from which $self->warn was called.
+        - Type :: int or undef
 
-        if( !defined( $a ) ){
-            $self->{error}=1;
-            $self->{errorString}='No value specified';
-            $self->warn;
-            return undef;
-        }
+    - $self->{errorString} :: This contains a description of the current error.
+        - Type :: string or undef
 
-        return 1;
-    }
+    - $self->{perror} :: This is set to true is a permanent error is present.
+            If note, it needs set to false.
+        - Type :: Perl boolean
 
-Below is a example script.
+The following are optional.
 
-    use Foo;
-    
-    my $foo=Foo->new( $ARGV[0] );
-    if( $foo->error ){
-        warn('error:'.$foo->error.': '.$foo->errorString);
-        exit $foo->error;
-    }
-    
-    $foo->foo($ARGV[1]);
-    if( $foo->error ){
-        warn('error:'.$foo->error.': '.$foo->errorString);
-        exit $foo->error;
-    }
+    - $self->{errorExtra} :: This is a hash reserved for any additional Error::Helper items.
 
-There are three required variables in the blessed hash.
+    - $self->{errorExtra}{all_errors_fatal} :: If true, this will die when $self->warn is called instead of
+            printing the error to STDERR. This is for if you want to use it eval for capturing errors and this
+            module more for handling grabbing error specifics, such as dieing and additional code based on the
+            return of $self->errorFlag.
+        - Type :: Perl boolean
+        - Default :: undef
 
-    $self->{error}
+    - $self->{errorExtra}{fatal_errors} :: This is a hash in which the keys are errors codes that are fatal. When
+            $self->warn is called it will check if the error code is fatal or not. $self->{errorExtra}{fatal_errors}{33}=>1
+            would be fatal, but $self->{errorExtra}{fatal_errors}{33}=>0 would now.
 
-This contains the current error code.
+    - $self->{errorExtra}{flags} :: This hash contains error integer to flag mapping. The
+            keys are the error integer and the value is the flag. For any unmatched error
+            integers, 'other' is returned.
 
-    $self->{errorString}
+    - $self->{errorExtra}{fatal_flags} :: This is a hash in which the keys are error flags that are fatal. When
+            $self->warn is called it will check if the flag for the error code is fatal or not. For the flag foo
+            $self->{errorExtra}{fatal_flags}{foo}=>1 would be fatal, but
+            $self->{errorExtra}{fatal_flags}{foo}=>0 would now.
 
-This contains a description of the current error.
-
-    $self->{perror}
-
-This is set to true is a permanent error is present. If note,
-it needs set to false.
-
-    $self->{errorExtra}
-
-This is a hash reserved for any additional Error::Helper stuff
-that may be added at a latter date.
-
-    $self->{errorExtra}{flags}
-
-This hash contains error integer to flag mapping. The keys are
-the error integer and the value is the flag.
-
-For any unmatched error integers, 'other' is returned.
+    - $self->{errorExtra}{perror_not_fatal} :: Controls if $self->{perror} is fatal or not.
+        - Type :: Perl boolean
+        - Default :: undef
 
 =head1 METHODS
 
@@ -123,7 +76,7 @@ Returns the current error code and true if there is an error.
 If there is no error, undef is returned.
 
     if($self->error){
-                warn('error: '.$foo->error.":".$foo->errorString);
+        # do something
     }
 
 =cut
@@ -138,11 +91,13 @@ This blanks the error storage and is only meant for internal usage.
 
 It does the following.
 
+	$self->{error}         = undef;
+	$self->{errorFilename} = undef;
+	$self->{errorLine}     = undef;
+	$self->{errorString}   = "";
+
 If $self->{perror} is set, it will not be able to blank any current
 errors.
-
-    $self->{error}=undef;
-    $self->{errorString}="";
 
 =cut
 
@@ -159,22 +114,53 @@ sub errorblank {
 
 		$package =~ s/\:\:/\-/g;
 
-		print STDERR $package . ' '
+		my $error
+			= $package . ' '
 			. $subroutine
 			. ': Unable to blank, as a permanent error is set. '
 			. 'error="'
 			. $self->error
+			. '" errorFilename="'
+			. $self->errorFilename
+			. '" errorLine="'
+			. $self->errorLine
 			. '" errorString="'
-			. $self->errorString . '"';
+			. $self->errorString
+			. '" file="'
+			. $filename
+			. ' line='
+			. $line;
+
+		if ( !$self->{errorExtra}{perror_not_fatal} ) {
+			die($error);
+		} else {
+			print STDERR $error;
+		}
 
 		return undef;
 	} ## end if ( $self->{perror} )
 
-	$self->{error}       = undef;
-	$self->{errorString} = "";
+	$self->{error}         = undef;
+	$self->{errorFilename} = undef;
+	$self->{errorLine}     = undef;
+	$self->{errorString}   = "";
 
 	return 1;
 } ## end sub errorblank
+
+=head2 errorFilename
+
+This returns the filename in which the error occured or other wise returns undef.
+
+    if($self->error){
+        print 'error happened in '.$self->errorFilename."\n";
+    }
+
+=cut
+
+sub errorFilename {
+	return $_[0]->{errorFilename};
+}
 
 =head2 errorFlag
 
@@ -185,7 +171,11 @@ If none is set, undef is returned.
 This may be used in a similar manner as the error method.
 
     if ( $self->errorFlag ){
-        warn('error: '.$self->error.":".$self->errorFlag.":".$self->errorString);
+        if ( $self->errorFlag eq 'foo' ){
+            # do something
+        }else{
+            die('error flag '.$self->errorFlag.' can not be handled');
+        }
     }
 
 =cut
@@ -195,15 +185,31 @@ sub errorFlag {
 		return undef;
 	}
 
-	if (   ( !defined( $_[0]->{errorExtra} ) )
+	if (  !defined( $_[0]->{errorExtra} )
+		|| ref( $_[0]->{errorExtra} ) ne 'HASH'
 		|| ( !defined( $_[0]->{errorExtra}{flags} ) )
-		|| ( !defined( $_[0]->{errorExtra}{flags}{ $_[1]->{error} } ) ) )
+		|| ref( $_[0]->{errorExtra}{flags} ) ne 'HASH'
+		|| !defined( $_[0]->{errorExtra}{flags}{ $_[0]->{error} } ) )
 	{
 		return 'other';
 	}
 
-	return $_[0]->{errorExtra}{flags}{ $_[1]->{error} };
+	return $_[0]->{errorExtra}{flags}{ $_[0]->{error} };
 } ## end sub errorFlag
+
+=head2 errorLine
+
+This returns the filename in which the error occured or other wise returns undef.
+
+    if($self->error){
+        print 'error happened at line '.$self->errorLine."\n";
+    }
+
+=cut
+
+sub errorLine {
+	return $_[0]->{errorLine};
+}
 
 =head2 errorString
 
@@ -237,7 +243,7 @@ sub perror {
 
 =head2 warn
 
-Throws a warn like error message based
+Throws a warn like error message based using the contents of $self->errorString
 
     $self->warn;
 
@@ -248,6 +254,9 @@ sub warn {
 
 	my ( $package, $filename, $line ) = caller;
 
+	$self->{errorFilename} = $filename;
+	$self->{errorLine}     = $line;
+
 	#get the calling sub
 	my @called     = caller(1);
 	my $subroutine = $called[3];
@@ -255,18 +264,49 @@ sub warn {
 
 	$package =~ s/\:\:/\-/g;
 
-	print STDERR $package . ' '
+	my $error
+		= $package . ' '
 		. $subroutine . ':'
-		. $self->error . ': '
-		. $self->errorString . ' at '
-		. $filename
-		. ' line '
-		. $line . "\n";
+		. $self->error . ':'
+		. $self->errorFlag . ': '
+		. $self->errorString
+		. ' at line '
+		. $line . ' in '
+		. $filename . "\n";
+
+	if (
+		$self->{errorExtra}{all_fatal}
+		|| (
+			$self->perror
+			&& !(
+				   defined( $self->{errorExtra} )
+				&& ref( $self->{errorExtra} ) eq 'HASH'
+				&& $self->{errorExtra}{perror_not_fatal}
+			)
+		)
+		|| (   defined( $self->{errorExtra} )
+			&& ref( $self->{errorExtra} ) eq 'HASH'
+			&& defined( $self->{errorExtra}{fatal_errors} )
+			&& ref( $self->{errorExtra}{fatal_errors} ) eq 'HASH'
+			&& $self->{errorExtra}{fatal_errors}{ $self->{error} } )
+		|| (   defined( $self->{errorExtra} )
+			&& ref( $self->{errorExtra} ) eq 'HASH'
+			&& defined( $self->{errorExtra}{fatal_flags} )
+			&& ref( $self->{errorExtra}{fatal_flags} ) eq 'HASH'
+			&& $self->{errorExtra}{fatal_flags}{ $self->errorFlag } )
+		)
+	{
+		die($error);
+	} ## end if ( $self->{errorExtra}{all_fatal} || ( $self...))
+
+	print STDERR $error;
 } ## end sub warn
 
 =head2 warnString
 
 Throws a warn like error in the same for mate as warn, but with a freeform message.
+
+This will not trigger any of the fatality checks. It will also not set any of the error values.
 
     $self->warnString('some error');
 
@@ -310,9 +350,6 @@ Please report any bugs or feature requests to C<bug-error-helper at rt.cpan.org>
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Error-Helper>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
-
-
-
 =head1 SUPPORT
 
 You can find documentation for this module with the perldoc command.
@@ -328,23 +365,15 @@ You can also look for information at:
 
 L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Error-Helper>
 
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/Error-Helper>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/Error-Helper>
-
 =item * Search CPAN
 
-L<http://search.cpan.org/dist/Error-Helper/>
+<https://metacpan.org/dist/Error-Helper>
 
 =back
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2012 Zane C. Bowers-Hadley.
+Copyright 2023 Zane C. Bowers-Hadley.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published
