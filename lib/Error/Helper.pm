@@ -19,7 +19,98 @@ our $VERSION = '2.0.0';
 
 Below is a example script showing it's usage.
 
+    use warnings;
+    use strict;
 
+    {
+    	package Foo;
+    	use base 'Error::Helper';
+
+    	sub new {
+    		my $arg = $_[1];
+
+    		my $self = {
+    			perror        => undef,
+    			error         => undef,
+    			errorLine     => undef,
+    			errorFilename => undef,
+    			errorString   => "",
+    			errorExtra    => {
+    				all_errors_fatal => 0,
+    				flags            => {
+    					1 => 'UndefArg',
+    					2 => 'test',
+    					3 => 'derp',
+    				},
+    				fatal_flags => {
+    					derp => 1,
+    				},
+    				perror_not_fatal => 0,
+    			},
+    		};
+    		bless $self;
+
+    		#error if $arg is set to "test"
+    		if ( defined($arg)
+			&& $arg eq "test" )
+    		{
+    			$self->{perror}      = 1;
+    			$self->{error}       = 2;
+    			$self->{errorString} = 'A value of "test" has been set';
+    			$self->warn;
+    			return $self;
+    		}
+
+    		return $self;
+    	} ## end sub new
+
+    	sub foo {
+    		my $self = $_[0];
+    		my $a    = $_[1];
+
+    		if ( !$self->errorblank ) {
+    			return undef;
+    		}
+
+    		if ( !defined($a) ) {
+    			$self->{error}       = 1;
+    			$self->{errorString} = 'No value specified';
+    			$self->warn;
+    			return undef;
+    		}
+
+            # this will be fatal as it error flag derp is set to fatal
+    		if ( $a eq 'derp' ) {
+    			$self->{error}       = 3;
+    			$self->{errorString} = 'foo was called with a value of derp';
+    			$self->warn;
+    		}
+
+    		return 1;
+    	} ## end sub foo
+    }
+
+    my $foo_obj = Foo->new( $ARGV[0] );
+    if ( $foo_obj->error ) {
+    	warn( 'error:' . $foo_obj->error . ': ' . $foo_obj->errorString );
+    	exit $foo_obj->error;
+    }
+
+    # catches fatal errors
+    eval{
+        $foo_obj->foo( $ARGV[1] );
+    };
+    if ($@) {
+    	# do something...
+    	warn( '$foo_obj->foo( $ARGV[1] ) errored.... '.$@);
+    	if ($foo_obj->errorFlag eq 'derp') {
+	    	warn('error flag derp found... calling again with a value of default');
+    		$foo_obj->foo( 'default' );
+    	}
+    } elsif ($foo->error) {
+    	# do something...
+       	warn( '$foo_obj->foo( $ARGV[1] ) errored');
+    }
 
 There are five required variables in the blessed hash.
 
@@ -325,11 +416,13 @@ sub warnString {
 	#get the calling sub
 	my @called     = caller(1);
 	my $subroutine = $called[3];
-	$subroutine =~ s/.*\:\://g;
-
-	$package =~ s/\:\:/\-/g;
-
-	print STDERR $package . ' ' . $subroutine . ': ' . $string . ' in ' . $filename . ' at line ' . $line . "\n";
+	if (defined($subroutine)) {
+		$subroutine =~ s/.*\:\://g;
+		$package =~ s/\:\:/\-/g;
+		print STDERR $package . ' ' . $subroutine . ': ' . $string . ' in ' . $filename . ' at line ' . $line . "\n";
+	}else {
+		print STDERR $package . ': ' . $string . ' in ' . $filename . ' at line ' . $line . "\n";
+	}
 } ## end sub warnString
 
 =head1 ERROR FLAGS
