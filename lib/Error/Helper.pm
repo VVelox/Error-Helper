@@ -112,7 +112,7 @@ Below is a example script showing it's usage.
        	warn( '$foo_obj->foo( $ARGV[1] ) errored');
     }
 
-There are five required variables in the blessed hash.
+There are five required variables in the blessed hash object.
 
     - $self->{error} :: This contains the current error code.
         - Type :: int or undef
