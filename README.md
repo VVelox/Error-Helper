@@ -1,5 +1,12 @@
 # Error::Helper Synopsis
 
+This module allows one to use it as a base for adding various error
+handling methods to their module. Error checking can be done in two
+methods, either calling one of error checking functions and seeing if
+it is present or setting that error code/flag to be fatal and
+collecting failures via eval and then when processing $@, then check
+the error code/flag.
+
 There are five required variables in the blessed hash object.
 
 - $self->{error} :: This contains the current error code.

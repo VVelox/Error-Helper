@@ -1,6 +1,6 @@
 Revision history for Error-Helper
 
-2.0.0	2023-12-03/13:45
+2.0.0	2023-12-03/20:45
 		-adds fatal errors to allow easy usage with eval
 		-errors can all be fatal, by error code, or by error flag
 		-perrors are fatal by default
