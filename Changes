@@ -1,8 +1,7 @@
 Revision history for Error-Helper
 
 2.1.0	2023-12-10/15:30
-		 - Add shared variables for getting error info when a initiator methode dies and
-		does return a blessed object.
+		 - Add shared variables for getting error info when a initiator methode dies and does not return a blessed object.
 
 2.0.0	2023-12-03/20:45
 		-adds fatal errors to allow easy usage with eval
